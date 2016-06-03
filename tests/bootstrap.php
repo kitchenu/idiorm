@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . '/../idiorm.php';
+require __DIR__.'/../vendor/autoload.php';
 
 /**
  *
@@ -46,7 +46,7 @@ class MockPDOStatement extends PDOStatement {
    /**
     * Add data to arrays
     */
-   public function bindParam($index, $value, $type)
+   public function bindParam($index, &$value, $type = PDO::PARAM_STR, $length = null, $driver_options = null)
    {
        // Do check on index, and type
        if (!is_int($index)) throw new Exception('Incorrect parameter type. Expected $index to be an integer.');

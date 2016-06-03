@@ -1,13 +1,15 @@
 <?php
 
-class CacheTest53 extends PHPUnit_Framework_TestCase {
+use Idiorm\ORM;
+
+class CacheTest extends PHPUnit_Framework_TestCase {
 
     const ALTERNATE = 'alternate'; // Used as name of alternate connection
 
     public function setUp() {
         // Set up the dummy database connections
-        ORM::set_db(new MockPDO('sqlite::memory:'));
-        ORM::set_db(new MockDifferentPDO('sqlite::memory:'), self::ALTERNATE);
+        ORM::setDb(new MockPDO('sqlite::memory:'));
+        ORM::setDb(new MockDifferentPDO('sqlite::memory:'), self::ALTERNATE);
 
         // Enable logging
         ORM::configure('logging', true);
@@ -17,14 +19,31 @@ class CacheTest53 extends PHPUnit_Framework_TestCase {
     }
 
     public function tearDown() {
-        ORM::reset_config();
-        ORM::reset_db();
+        ORM::resetConfig();
+        ORM::resetDb();
     }
 
-     
+    // Test caching. This is a bit of a hack.
+    public function testQueryGenerationOnlyOccursOnce() {
+        ORM::forTable('widget')->where('name', 'Fred')->where('age', 17)->findOne();
+        ORM::forTable('widget')->where('name', 'Bob')->where('age', 42)->findOne();
+        $expected = ORM::getLastQuery();
+        ORM::forTable('widget')->where('name', 'Fred')->where('age', 17)->findOne(); // this shouldn't run a query!
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testQueryGenerationOnlyOccursOnceWithMultipleConnections() {
+        // Test caching with multiple connections (also a bit of a hack)
+        ORM::forTable('widget', self::ALTERNATE)->where('name', 'Steve')->where('age', 80)->findOne();
+        ORM::forTable('widget', self::ALTERNATE)->where('name', 'Tom')->where('age', 120)->findOne();
+        $expected = ORM::getLastQuery();
+        ORM::forTable('widget', self::ALTERNATE)->where('name', 'Steve')->where('age', 80)->findOne(); // this shouldn't run a query!
+        $this->assertEquals($expected, ORM::getLastQuery(self::ALTERNATE));
+    }
+
     public function testCustomCacheCallback() {
         $phpunit = $this;
-        $my_cache = array();
+        $my_cache = [];
         ORM::configure('caching_auto_clear', true);
  
         ORM::configure('create_cache_key', function ($query, $parameters, $table_name, $connection) use ($phpunit, &$my_cache) {
@@ -57,11 +76,11 @@ class CacheTest53 extends PHPUnit_Framework_TestCase {
         ORM::configure('clear_cache', function ($table_name, $connection_name) use ($phpunit, &$my_cache) {
              $phpunit->assertEquals(true, is_string($table_name)); 
              $phpunit->assertEquals(true, is_string($connection_name));
-             $my_cache = array();
+             $my_cache = [];
         });
-        ORM::for_table('widget')->where('name', 'Fred')->where('age', 21)->find_one();
-        ORM::for_table('widget')->where('name', 'Fred')->where('age', 21)->find_one();
-        ORM::for_table('widget')->where('name', 'Bob')->where('age', 42)->find_one();
+        ORM::forTable('widget')->where('name', 'Fred')->where('age', 21)->findOne();
+        ORM::forTable('widget')->where('name', 'Fred')->where('age', 21)->findOne();
+        ORM::forTable('widget')->where('name', 'Bob')->where('age', 42)->findOne();
  
         //our custom cache should be full now 
         $this->assertEquals(true, !empty($my_cache));
@@ -71,7 +90,7 @@ class CacheTest53 extends PHPUnit_Framework_TestCase {
         $this->assertEquals('some-prefix', substr($k,0,11));
         }
         
-        $new = ORM::for_table('widget')->create();
+        $new = ORM::forTable('widget')->create();
         $new->name = "Joe";
         $new->age = 25;
         $saved = $new->save();
@@ -79,4 +98,5 @@ class CacheTest53 extends PHPUnit_Framework_TestCase {
         //our custom cache should be empty now 
         $this->assertEquals(true, empty($my_cache));
     }
+
 }

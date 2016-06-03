@@ -1,6 +1,8 @@
 <?php
 
-class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
+use Idiorm\ORM;
+
+class QueryBuilderTest extends PHPUnit_Framework_TestCase {
 
     public function setUp() {
         // Enable logging
@@ -12,8 +14,8 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function tearDown() {
-        ORM::configure('logging', false);
-        ORM::setDb(null);
+        ORM::resetConfig();
+        ORM::resetDb();
     }
 
     public function testFindMany() {
@@ -37,6 +39,12 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     public function testWhereIdIs() {
         ORM::forTable('widget')->whereIdIs(5)->findOne();
         $expected = "SELECT * FROM `widget` WHERE `id` = '5' LIMIT 1";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testWhereIdIn() {
+        ORM::forTable('widget')->whereIdIn([4, 5])->findMany();
+        $expected = "SELECT * FROM `widget` WHERE `id` IN ('4', '5')";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
@@ -71,14 +79,38 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testWhereIn() {
-        ORM::forTable('widget')->whereIn('name', array('Fred', 'Joe'))->findMany();
+        ORM::forTable('widget')->whereIn('name', ['Fred', 'Joe'])->findMany();
         $expected = "SELECT * FROM `widget` WHERE `name` IN ('Fred', 'Joe')";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testWhereNotIn() {
-        ORM::forTable('widget')->whereNotIn('name', array('Fred', 'Joe'))->findMany();
+        ORM::forTable('widget')->whereNotIn('name', ['Fred', 'Joe'])->findMany();
         $expected = "SELECT * FROM `widget` WHERE `name` NOT IN ('Fred', 'Joe')";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testWhereAnyIs() {
+        ORM::forTable('widget')->whereAnyIs([
+            ['name' => 'Joe', 'age' => 10],
+            ['name' => 'Fred', 'age' => 20]])->findMany();
+        $expected = "SELECT * FROM `widget` WHERE (( `name` = 'Joe' AND `age` = '10' ) OR ( `name` = 'Fred' AND `age` = '20' ))";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testWhereAnyIsOverrideOneColumn() {
+        ORM::forTable('widget')->whereAnyIs([
+            ['name' => 'Joe', 'age' => 10],
+            ['name' => 'Fred', 'age' => 20]], ['age' => '>'])->findMany();
+        $expected = "SELECT * FROM `widget` WHERE (( `name` = 'Joe' AND `age` > '10' ) OR ( `name` = 'Fred' AND `age` > '20' ))";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testWhereAnyIsOverrideAllOperators() {
+        ORM::forTable('widget')->whereAnyIs([
+            ['score' => '5', 'age' => 10],
+            ['score' => '15', 'age' => 20]], '>')->findMany();
+        $expected = "SELECT * FROM `widget` WHERE (( `score` > '5' AND `age` > '10' ) OR ( `score` > '15' AND `age` > '20' ))";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
@@ -167,13 +199,13 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testHavingIn() {
-        ORM::forTable('widget')->groupBy('name')->havingIn('name', array('Fred', 'Joe'))->findMany();
+        ORM::forTable('widget')->groupBy('name')->havingIn('name', ['Fred', 'Joe'])->findMany();
         $expected = "SELECT * FROM `widget` GROUP BY `name` HAVING `name` IN ('Fred', 'Joe')";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testHavingNotIn() {
-        ORM::forTable('widget')->groupBy('name')->havingNotIn('name', array('Fred', 'Joe'))->findMany();
+        ORM::forTable('widget')->groupBy('name')->havingNotIn('name', ['Fred', 'Joe'])->findMany();
         $expected = "SELECT * FROM `widget` GROUP BY `name` HAVING `name` NOT IN ('Fred', 'Joe')";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
@@ -203,7 +235,7 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testRawHaving() {
-        ORM::forTable('widget')->groupBy('name')->havingRaw('`name` = ? AND (`age` = ? OR `age` = ?)', array('Fred', 5, 10))->findMany();
+        ORM::forTable('widget')->groupBy('name')->havingRaw('`name` = ? AND (`age` = ? OR `age` = ?)', ['Fred', 5, 10])->findMany();
         $expected = "SELECT * FROM `widget` GROUP BY `name` HAVING `name` = 'Fred' AND (`age` = '5' OR `age` = '10')";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
@@ -239,13 +271,13 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testRawWhereClause() {
-        ORM::forTable('widget')->whereRaw('`name` = ? AND (`age` = ? OR `age` = ?)', array('Fred', 5, 10))->findMany();
+        ORM::forTable('widget')->whereRaw('`name` = ? AND (`age` = ? OR `age` = ?)', ['Fred', 5, 10])->findMany();
         $expected = "SELECT * FROM `widget` WHERE `name` = 'Fred' AND (`age` = '5' OR `age` = '10')";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testRawWhereClauseWithPercentSign() {
-        ORM::forTable('widget')->whereRaw('STRFTIME("%Y", "now") = ?', array(2012))->findMany();
+        ORM::forTable('widget')->whereRaw('STRFTIME("%Y", "now") = ?', [2012])->findMany();
         $expected = "SELECT * FROM `widget` WHERE STRFTIME(\"%Y\", \"now\") = '2012'";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
@@ -257,7 +289,7 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testRawWhereClauseInMethodChain() {
-        ORM::forTable('widget')->where('age', 18)->whereRaw('(`name` = ? OR `name` = ?)', array('Fred', 'Bob'))->where('size', 'large')->findMany();
+        ORM::forTable('widget')->where('age', 18)->whereRaw('(`name` = ? OR `name` = ?)', ['Fred', 'Bob'])->where('size', 'large')->findMany();
         $expected = "SELECT * FROM `widget` WHERE `age` = '18' AND (`name` = 'Fred' OR `name` = 'Bob') AND `size` = 'large'";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
@@ -269,7 +301,7 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testRawQueryWithParameters() {
-        ORM::forTable('widget')->rawQuery('SELECT `w`.* FROM `widget` w WHERE `name` = ? AND `age` = ?', array('Fred', 5))->findMany();
+        ORM::forTable('widget')->rawQuery('SELECT `w`.* FROM `widget` w WHERE `name` = ? AND `age` = ?', ['Fred', 5])->findMany();
         $expected = "SELECT `w`.* FROM `widget` w WHERE `name` = 'Fred' AND `age` = '5'";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
@@ -305,7 +337,7 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testAliasesInSelectManyResults() {
-        ORM::forTable('widget')->selectMany(array('widget_name' => 'widget.name'), 'widget_handle')->findMany();
+        ORM::forTable('widget')->selectMany(['widget_name' => 'widget.name'], 'widget_handle')->findMany();
         $expected = "SELECT `widget`.`name` AS `widget_name`, `widget_handle` FROM `widget`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
@@ -317,64 +349,64 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testLiteralExpressionInSelectManyResultColumns() {
-        ORM::forTable('widget')->selectManyExpr(array('count' => 'COUNT(*)'), 'SUM(widget_order)')->findMany();
+        ORM::forTable('widget')->selectManyExpr(['count' => 'COUNT(*)'], 'SUM(widget_order)')->findMany();
         $expected = "SELECT COUNT(*) AS `count`, SUM(widget_order) FROM `widget`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testSimpleJoin() {
-        ORM::forTable('widget')->join('widget_handle', array('widget_handle.widget_id', '=', 'widget.id'))->findMany();
+        ORM::forTable('widget')->join('widget_handle', ['widget_handle.widget_id', '=', 'widget.id'])->findMany();
         $expected = "SELECT * FROM `widget` JOIN `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testSimpleJoinWithWhereIdIsMethod() {
-        ORM::forTable('widget')->join('widget_handle', array('widget_handle.widget_id', '=', 'widget.id'))->findOne(5);
+        ORM::forTable('widget')->join('widget_handle', ['widget_handle.widget_id', '=', 'widget.id'])->findOne(5);
         $expected = "SELECT * FROM `widget` JOIN `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id` WHERE `widget`.`id` = '5' LIMIT 1";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testInnerJoin() {
-        ORM::forTable('widget')->innerJoin('widget_handle', array('widget_handle.widget_id', '=', 'widget.id'))->findMany();
+        ORM::forTable('widget')->innerJoin('widget_handle', ['widget_handle.widget_id', '=', 'widget.id'])->findMany();
         $expected = "SELECT * FROM `widget` INNER JOIN `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testLeftOuterJoin() {
-        ORM::forTable('widget')->leftOuterJoin('widget_handle', array('widget_handle.widget_id', '=', 'widget.id'))->findMany();
+        ORM::forTable('widget')->leftOuterJoin('widget_handle', ['widget_handle.widget_id', '=', 'widget.id'])->findMany();
         $expected = "SELECT * FROM `widget` LEFT OUTER JOIN `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testRightOuterJoin() {
-        ORM::forTable('widget')->rightOuterJoin('widget_handle', array('widget_handle.widget_id', '=', 'widget.id'))->findMany();
+        ORM::forTable('widget')->rightOuterJoin('widget_handle', ['widget_handle.widget_id', '=', 'widget.id'])->findMany();
         $expected = "SELECT * FROM `widget` RIGHT OUTER JOIN `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testFullOuterJoin() {
-        ORM::forTable('widget')->fullOuterJoin('widget_handle', array('widget_handle.widget_id', '=', 'widget.id'))->findMany();
+        ORM::forTable('widget')->fullOuterJoin('widget_handle', ['widget_handle.widget_id', '=', 'widget.id'])->findMany();
         $expected = "SELECT * FROM `widget` FULL OUTER JOIN `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testMultipleJoinSources() {
         ORM::forTable('widget')
-        ->join('widget_handle', array('widget_handle.widget_id', '=', 'widget.id'))
-        ->join('widget_nozzle', array('widget_nozzle.widget_id', '=', 'widget.id'))
+        ->join('widget_handle', ['widget_handle.widget_id', '=', 'widget.id'])
+        ->join('widget_nozzle', ['widget_nozzle.widget_id', '=', 'widget.id'])
         ->findMany();
         $expected = "SELECT * FROM `widget` JOIN `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id` JOIN `widget_nozzle` ON `widget_nozzle`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testJoinWithAliases() {
-        ORM::forTable('widget')->join('widget_handle', array('wh.widget_id', '=', 'widget.id'), 'wh')->findMany();
+        ORM::forTable('widget')->join('widget_handle', ['wh.widget_id', '=', 'widget.id'], 'wh')->findMany();
         $expected = "SELECT * FROM `widget` JOIN `widget_handle` `wh` ON `wh`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testJoinWithAliasesAndWhere() {
-        ORM::forTable('widget')->tableAlias('w')->join('widget_handle', array('wh.widget_id', '=', 'w.id'), 'wh')->whereEqual('id', 1)->findMany();
+        ORM::forTable('widget')->tableAlias('w')->join('widget_handle', ['wh.widget_id', '=', 'w.id'], 'wh')->whereEqual('id', 1)->findMany();
         $expected = "SELECT * FROM `widget` `w` JOIN `widget_handle` `wh` ON `wh`.`widget_id` = `w`.`id` WHERE `w`.`id` = '1'";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
@@ -386,22 +418,22 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testRawJoin() {
-        ORM::forTable('widget')->rawJoin('INNER JOIN ( SELECT * FROM `widget_handle` )', array('widget_handle.widget_id', '=', 'widget.id'), 'widget_handle')->findMany();
+        ORM::forTable('widget')->rawJoin('INNER JOIN ( SELECT * FROM `widget_handle` )', ['widget_handle.widget_id', '=', 'widget.id'], 'widget_handle')->findMany();
         $expected = "SELECT * FROM `widget` INNER JOIN ( SELECT * FROM `widget_handle` ) `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testRawJoinWithParameters() {
-        ORM::forTable('widget')->rawJoin('INNER JOIN ( SELECT * FROM `widget_handle` WHERE `widget_handle`.name LIKE ? AND `widget_handle`.category = ?)', array('widget_handle.widget_id', '=', 'widget.id'), 'widget_handle', array('%button%', 2))->findMany();
+        ORM::forTable('widget')->rawJoin('INNER JOIN ( SELECT * FROM `widget_handle` WHERE `widget_handle`.name LIKE ? AND `widget_handle`.category = ?)', ['widget_handle.widget_id', '=', 'widget.id'], 'widget_handle', ['%button%', 2])->findMany();
         $expected = "SELECT * FROM `widget` INNER JOIN ( SELECT * FROM `widget_handle` WHERE `widget_handle`.name LIKE '%button%' AND `widget_handle`.category = '2') `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id`";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
     public function testRawJoinAndRawWhereWithParameters() {
         ORM::forTable('widget')
-            ->rawJoin('INNER JOIN ( SELECT * FROM `widget_handle` WHERE `widget_handle`.name LIKE ? AND `widget_handle`.category = ?)', array('widget_handle.widget_id', '=', 'widget.id'), 'widget_handle', array('%button%', 2))
-            ->rawJoin('INNER JOIN ( SELECT * FROM `person` WHERE `person`.name LIKE ?)', array('person.id', '=', 'widget.person_id'), 'person', array('%Fred%'))
-            ->whereRaw('`id` > ? AND `id` < ?', array(5, 10))
+            ->rawJoin('INNER JOIN ( SELECT * FROM `widget_handle` WHERE `widget_handle`.name LIKE ? AND `widget_handle`.category = ?)', ['widget_handle.widget_id', '=', 'widget.id'], 'widget_handle', ['%button%', 2])
+            ->rawJoin('INNER JOIN ( SELECT * FROM `person` WHERE `person`.name LIKE ?)', ['person.id', '=', 'widget.person_id'], 'person', ['%Fred%'])
+            ->whereRaw('`id` > ? AND `id` < ?', [5, 10])
             ->findMany();
         $expected = "SELECT * FROM `widget` INNER JOIN ( SELECT * FROM `widget_handle` WHERE `widget_handle`.name LIKE '%button%' AND `widget_handle`.category = '2') `widget_handle` ON `widget_handle`.`widget_id` = `widget`.`id` INNER JOIN ( SELECT * FROM `person` WHERE `person`.name LIKE '%Fred%') `person` ON `person`.`id` = `widget`.`person_id` WHERE `id` > '5' AND `id` < '10'";
         $this->assertEquals($expected, ORM::getLastQuery());
@@ -462,7 +494,7 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
 
     public function testUpdateMultipleFields() {
         $widget = ORM::forTable('widget')->findOne(1);
-        $widget->set(array("name" => "Fred", "age" => 10));
+        $widget->set(["name" => "Fred", "age" => 10]);
         $widget->save();
         $expected = "UPDATE `widget` SET `name` = 'Fred', `age` = '10' WHERE `id` = '1'";
         $this->assertEquals($expected, ORM::getLastQuery());
@@ -470,8 +502,8 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
 
     public function testUpdateMultipleFieldsContainingAnExpression() {
         $widget = ORM::forTable('widget')->findOne(1);
-        $widget->set(array("name" => "Fred", "age" => 10));
-        $widget->setExpr(array("added" => "NOW()", "lat_long" => "GeomFromText('POINT(1.2347 2.3436)')"));
+        $widget->set(["name" => "Fred", "age" => 10]);
+        $widget->setExpr(["added" => "NOW()", "lat_long" => "GeomFromText('POINT(1.2347 2.3436)')"]);
         $widget->save();
         $expected = "UPDATE `widget` SET `name` = 'Fred', `age` = '10', `added` = NOW(), `lat_long` = GeomFromText('POINT(1.2347 2.3436)') WHERE `id` = '1'";
         $this->assertEquals($expected, ORM::getLastQuery());
@@ -479,8 +511,8 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
 
     public function testUpdateMultipleFieldsContainingAnExpressionAndOverridePreviouslySetExpression() {
         $widget = ORM::forTable('widget')->findOne(1);
-        $widget->set(array("name" => "Fred", "age" => 10));
-        $widget->setExpr(array("added" => "NOW()", "lat_long" => "GeomFromText('POINT(1.2347 2.3436)')"));
+        $widget->set(["name" => "Fred", "age" => 10]);
+        $widget->setExpr(["added" => "NOW()", "lat_long" => "GeomFromText('POINT(1.2347 2.3436)')"]);
         $widget->lat_long = 'unknown';
         $widget->save();
         $expected = "UPDATE `widget` SET `name` = 'Fred', `age` = '10', `added` = NOW(), `lat_long` = 'unknown' WHERE `id` = '1'";
@@ -495,7 +527,7 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
     }
 
     public function testDeleteMany() {
-        ORM::forTable('widget')->whereEqual('age', 10)->delete_many();
+        ORM::forTable('widget')->whereEqual('age', 10)->deleteMany();
         $expected = "DELETE FROM `widget` WHERE `age` = '10'";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
@@ -536,6 +568,74 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 
+    public function testQuoteIdentifierPart() {
+        $widget = ORM::forTable('widget')->findOne(1);
+        $widget->set('added', '2013-01-04');
+        $widget->save();
+        $expected = "UPDATE `widget` SET `added` = '2013-01-04' WHERE `id` = '1'";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+    
+    public function testQuoteMultipleIdentifiersPart() {
+        Closure::bind(function(){
+            $record = ORM::forTable('widget')->useIdColumn(['id1', 'id2'])->create();
+            $expected = "`id1`, `id2`";
+            $this->assertEquals($expected, $record->quoteIdentifier($record->getIdColumnName()));
+        }, $this, 'Idiorm\ORM')->__invoke();
+    }
+    
+    /**
+     * Compound primary key tests
+     */
+    public function testFindOneWithCompoundPrimaryKey() {
+        $record = ORM::forTable('widget')->useIdColumn(['id1', 'id2']);
+        $record->findOne(['id1' => 10, 'name' => 'Joe', 'id2' => 20]);
+        $expected = "SELECT * FROM `widget` WHERE `id1` = '10' AND `id2` = '20' LIMIT 1";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testInsertWithCompoundPrimaryKey() {
+        $record = ORM::forTable('widget')->useIdColumn(['id1', 'id2'])->create();
+        $record->set('id1', 10);
+        $record->set('id2', 20);
+        $record->set('name', 'Joe');
+        $record->save();
+        $expected = "INSERT INTO `widget` (`id1`, `id2`, `name`) VALUES ('10', '20', 'Joe')";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testUpdateWithCompoundPrimaryKey() {
+        $record = ORM::forTable('widget')->useIdColumn(['id1', 'id2'])->create();
+        $record->set('id1', 10);
+        $record->set('id2', 20);
+        $record->set('name', 'Joe');
+        $record->save();
+        $record->set('name', 'John');
+        $record->save();
+        $expected = "UPDATE `widget` SET `name` = 'John' WHERE `id1` = '10' AND `id2` = '20'";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testDeleteWithCompoundPrimaryKey() {
+        $record = ORM::forTable('widget')->useIdColumn(['id1', 'id2'])->create();
+        $record->set('id1', 10);
+        $record->set('id2', 20);
+        $record->set('name', 'Joe');
+        $record->save();
+        $record->delete();
+        $expected = "DELETE FROM `widget` WHERE `id1` = '10' AND `id2` = '20'";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testWhereIdInWithCompoundPrimaryKey() {
+        $record = ORM::forTable('widget')->useIdColumn(['id1', 'id2']);
+        $record->whereIdIn([
+            ['id1' => 10, 'name' => 'Joe', 'id2' => 20],
+            ['id1' => 20, 'name' => 'Joe', 'id2' => 30]])->findMany();
+        $expected = "SELECT * FROM `widget` WHERE (( `id1` = '10' AND `id2` = '20' ) OR ( `id1` = '20' AND `id2` = '30' ))";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
     /**
      * Regression tests
      */
@@ -570,6 +670,18 @@ class QueryBuilderPsr1Test53 extends PHPUnit_Framework_TestCase {
         $widget->setExpr('added', 'NOW()');
         $widget->save();
         $expected = "UPDATE `widget` SET `added` = NOW() WHERE `id` = '1'";
+        $this->assertEquals($expected, ORM::getLastQuery());
+    }
+
+    public function testIssue176LimitDoesntWorkFirstTime() {
+        ORM::resetConfig();
+        ORM::resetDb();
+
+        ORM::configure('logging', true);
+        ORM::configure('connection_string', 'sqlite::memory:');
+
+        ORM::forTable('sqlite_master')->limit(1)->findArray();
+        $expected = "SELECT * FROM `sqlite_master` LIMIT 1";
         $this->assertEquals($expected, ORM::getLastQuery());
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+use Idiorm\ORM;
+
 class ORMTest extends PHPUnit_Framework_TestCase {
 
     public function setUp() {
@@ -8,12 +10,12 @@ class ORMTest extends PHPUnit_Framework_TestCase {
 
         // Set up the dummy database connection
         $db = new MockPDO('sqlite::memory:');
-        ORM::set_db($db);
+        ORM::setDb($db);
     }
 
     public function tearDown() {
-        ORM::reset_config();
-        ORM::reset_db();
+        ORM::resetConfig();
+        ORM::resetDb();
     }
 
     public function testStaticAtrributes() {
@@ -22,35 +24,35 @@ class ORMTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testForTable() {
-        $result = ORM::for_table('test');
-        $this->assertInstanceOf('ORM', $result);
+        $result = ORM::forTable('test');
+        $this->assertInstanceOf('Idiorm\ORM', $result);
     }
 
     public function testCreate() {
-        $model = ORM::for_table('test')->create();
-        $this->assertInstanceOf('ORM', $model);
-        $this->assertTrue($model->is_new());
+        $model = ORM::forTable('test')->create();
+        $this->assertInstanceOf('Idiorm\ORM', $model);
+        $this->assertTrue($model->isNew());
     }
 
     public function testIsNew() {
-        $model = ORM::for_table('test')->create();
-        $this->assertTrue($model->is_new());
+        $model = ORM::forTable('test')->create();
+        $this->assertTrue($model->isNew());
 
-        $model = ORM::for_table('test')->create(array('test' => 'test'));
-        $this->assertTrue($model->is_new());
+        $model = ORM::forTable('test')->create(['test' => 'test']);
+        $this->assertTrue($model->isNew());
     }
 
     public function testIsDirty() {
-        $model = ORM::for_table('test')->create();
-        $this->assertFalse($model->is_dirty('test'));
+        $model = ORM::forTable('test')->create();
+        $this->assertFalse($model->isDirty('test'));
         
-        $model = ORM::for_table('test')->create(array('test' => 'test'));
-        $this->assertTrue($model->is_dirty('test'));
+        $model = ORM::forTable('test')->create(['test' => 'test']);
+        $this->assertTrue($model->isDirty('test'));
     }
 
     public function testArrayAccess() {
         $value = 'test';
-        $model = ORM::for_table('test')->create();
+        $model = ORM::forTable('test')->create();
         $model['test'] = $value;
         $this->assertTrue(isset($model['test']));
         $this->assertEquals($model['test'], $value);
@@ -59,44 +61,44 @@ class ORMTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testFindResultSet() {
-        $result_set = ORM::for_table('test')->find_result_set();
-        $this->assertInstanceOf('IdiormResultSet', $result_set);
+        $result_set = ORM::forTable('test')->findResultSet();
+        $this->assertInstanceOf('Idiorm\ResultSet', $result_set);
         $this->assertSame(count($result_set), 5);
     }
 
     public function testFindResultSetByDefault() {
         ORM::configure('return_result_sets', true);
 
-        $result_set = ORM::for_table('test')->find_many();
-        $this->assertInstanceOf('IdiormResultSet', $result_set);
+        $result_set = ORM::forTable('test')->findMany();
+        $this->assertInstanceOf('Idiorm\ResultSet', $result_set);
         $this->assertSame(count($result_set), 5);
         
         ORM::configure('return_result_sets', false);
         
-        $result_set = ORM::for_table('test')->find_many();
+        $result_set = ORM::forTable('test')->findMany();
         $this->assertInternalType('array', $result_set);
         $this->assertSame(count($result_set), 5);
     }
 
     public function testGetLastPdoStatement() {
-        ORM::for_table('widget')->where('name', 'Fred')->find_one();
-        $statement = ORM::get_last_statement();
+        ORM::forTable('widget')->where('name', 'Fred')->findOne();
+        $statement = ORM::getLastStatement();
         $this->assertInstanceOf('MockPDOStatement', $statement);
     }
 
     /**
-     * @expectedException IdiormMethodMissingException
+     * @expectedException Idiorm\MethodMissingException
      */
     public function testInvalidORMFunctionCallShouldCreateException() {
-        $orm = ORM::for_table('test');
+        $orm = ORM::forTable('test');
         $orm->invalidFunctionCall();
     }
 
     /**
-     * @expectedException IdiormMethodMissingException
+     * @expectedException Idiorm\MethodMissingException
      */
     public function testInvalidResultsSetFunctionCallShouldCreateException() {
-        $resultSet = ORM::for_table('test')->find_result_set();
+        $resultSet = ORM::forTable('test')->findResultSet();
         $resultSet->invalidFunctionCall();
     }
 
@@ -109,11 +111,11 @@ class ORMTest extends PHPUnit_Framework_TestCase {
      */
     public function testUpdateNullPrimaryKey() {
         try {
-            $widget = ORM::for_table('widget')
-                ->use_id_column('primary')
+            $widget = ORM::forTable('widget')
+                ->useIdColumn('primary')
                 ->select('foo')
                 ->where('primary', 1)
-                ->find_one()
+                ->findOne()
             ;
 
             $widget->foo = 'bar';
@@ -127,11 +129,11 @@ class ORMTest extends PHPUnit_Framework_TestCase {
 
     public function testDeleteNullPrimaryKey() {
         try {
-            $widget = ORM::for_table('widget')
-                ->use_id_column('primary')
+            $widget = ORM::forTable('widget')
+                ->useIdColumn('primary')
                 ->select('foo')
                 ->where('primary', 1)
-                ->find_one()
+                ->findOne()
             ;
 
             $widget->delete();
@@ -144,11 +146,11 @@ class ORMTest extends PHPUnit_Framework_TestCase {
 
     public function testNullPrimaryKey() {
         try {
-            $widget = ORM::for_table('widget')
-                ->use_id_column('primary')
+            $widget = ORM::forTable('widget')
+                ->useIdColumn('primary')
                 ->select('foo')
                 ->where('primary', 1)
-                ->find_one()
+                ->findOne()
             ;
 
             $widget->id(true);
@@ -161,12 +163,12 @@ class ORMTest extends PHPUnit_Framework_TestCase {
 
     public function testNullPrimaryKeyPart() {
         try {
-            $widget = ORM::for_table('widget')
-                ->use_id_column(array('id', 'primary'))
+            $widget = ORM::forTable('widget')
+                ->useIdColumn(['id', 'primary'])
                 ->select('foo')
                 ->where('id', 1)
                 ->where('primary', 1)
-                ->find_one()
+                ->findOne()
             ;
 
             $widget->id(true);

@@ -1,7 +1,7 @@
 Idiorm
 ======
 
-[![Build Status](https://travis-ci.org/j4mie/idiorm.png?branch=master)](https://travis-ci.org/j4mie/idiorm) [![Latest Stable Version](https://poser.pugx.org/j4mie/idiorm/v/stable.png)](https://packagist.org/packages/j4mie/idiorm) [![Total Downloads](https://poser.pugx.org/j4mie/idiorm/downloads.png)](https://packagist.org/packages/j4mie/idiorm) [![Code Climate](https://codeclimate.com/github/j4mie/idiorm/badges/gpa.svg)](https://codeclimate.com/github/j4mie/idiorm)
+[![Build Status](https://api.travis-ci.org/kitchenu/idiorm.png?branch=master)](https://travis-ci.org/kitchenu/idiorm)
 
 [http://j4mie.github.com/idiormandparis/](http://j4mie.github.com/idiormandparis/)
 
@@ -16,7 +16,7 @@ Idiorm is now considered to be feature complete as of version 1.5.0. Whilst it w
 
 A lightweight nearly-zero-configuration object-relational mapper and fluent query builder for PHP5.
 
-Tested on PHP 5.2.0+ - may work on earlier versions with PDO and the correct database drivers.
+Tested on PHP 5.4.0+ - may work on earlier versions with PDO and the correct database drivers.
 
 Released under a [BSD license](http://en.wikipedia.org/wiki/BSD_licenses).
 
@@ -34,7 +34,6 @@ Features
 * Database agnostic. Currently supports SQLite, MySQL, Firebird and PostgreSQL. May support others, please give it a try!
 * Supports collections of models with method chaining to filter or apply actions to multiple results at once.
 * Multiple connections supported
-* PSR-1 compliant methods (any method can be called in camelCase instead of underscores eg. `find_many()` becomes `findMany()`) - you'll need PHP 5.3+
 
 Documentation
 -------------
@@ -53,20 +52,22 @@ Let's See Some Code
 -------------------
 
 ```php
-$user = ORM::for_table('user')
-    ->where_equal('username', 'j4mie')
-    ->find_one();
+use Idiorm\ORM;
+
+$user = ORM::forTable('user')
+    ->whereEqual('username', 'j4mie')
+    ->findOne();
 
 $user->first_name = 'Jamie';
 $user->save();
 
-$tweets = ORM::for_table('tweet')
+$tweets = ORM::forTable('tweet')
     ->select('tweet.*')
     ->join('user', array(
         'user.id', '=', 'tweet.user_id'
     ))
-    ->where_equal('user.username', 'j4mie')
-    ->find_many();
+    ->whereEqual('user.username', 'j4mie')
+    ->findMany();
 
 foreach ($tweets as $tweet) {
     echo $tweet->text;
@@ -75,6 +76,10 @@ foreach ($tweets as $tweet) {
 
 Changelog
 ---------
+
+#### 2.0.0 - release 2016-06-03
+* Support PSR-4 autoloader
+* Support PSR1/2 Coding Standard
 
 #### 1.5.1 - release 2014-06-23
 

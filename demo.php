@@ -1,55 +1,50 @@
 <?php
+// ------------------- //
+// --- Idiorm Demo --- //
+// ------------------- //
+// Note: This is just about the simplest database-driven webapp it's possible to create
+// and is designed only for the purpose of demonstrating how Idiorm works.
+// In case it's not obvious: this is not the correct way to build web applications!
+// Require the idiorm file
+use Idiorm\ORM;
 
-    // ------------------- //
-    // --- Idiorm Demo --- //
-    // ------------------- //
+// Connect to the demo database file
+ORM::configure('sqlite:./demo.sqlite');
 
-    // Note: This is just about the simplest database-driven webapp it's possible to create
-    // and is designed only for the purpose of demonstrating how Idiorm works.
-
-    // In case it's not obvious: this is not the correct way to build web applications!
-
-    // Require the idiorm file
-    require_once("idiorm.php");
-
-    // Connect to the demo database file
-    ORM::configure('sqlite:./demo.sqlite');
-
-    // This grabs the raw database connection from the ORM
-    // class and creates the table if it doesn't already exist.
-    // Wouldn't normally be needed if the table is already there.
-    $db = ORM::get_db();
-    $db->exec("
+// This grabs the raw database connection from the ORM
+// class and creates the table if it doesn't already exist.
+// Wouldn't normally be needed if the table is already there.
+$db = ORM::get_db();
+$db->exec("
         CREATE TABLE IF NOT EXISTS contact (
             id INTEGER PRIMARY KEY, 
             name TEXT, 
             email TEXT 
         );"
-    );
+);
 
-    // Handle POST submission
-    if (!empty($_POST)) {
-        
-        // Create a new contact object
-        $contact = ORM::for_table('contact')->create();
+// Handle POST submission
+if (!empty($_POST)) {
 
-        // SHOULD BE MORE ERROR CHECKING HERE!
+    // Create a new contact object
+    $contact = ORM::forTable('contact')->create();
 
-        // Set the properties of the object
-        $contact->name = $_POST['name'];
-        $contact->email = $_POST['email'];
+    // SHOULD BE MORE ERROR CHECKING HERE!
+    // Set the properties of the object
+    $contact->name = $_POST['name'];
+    $contact->email = $_POST['email'];
 
-        // Save the object to the database
-        $contact->save();
-        
-        // Redirect to self.
-        header('Location: ' . basename(__FILE__));
-        exit;
-    }
+    // Save the object to the database
+    $contact->save();
 
-    // Get a list of all contacts from the database
-    $count = ORM::for_table('contact')->count();
-    $contact_list = ORM::for_table('contact')->find_many();
+    // Redirect to self.
+    header('Location: ' . basename(__FILE__));
+    exit;
+}
+
+// Get a list of all contacts from the database
+$count = ORM::forTable('contact')->count();
+$contact_list = ORM::forTable('contact')->findMany();
 ?>
 
 <html>
