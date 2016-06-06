@@ -2062,7 +2062,7 @@ class ORM implements ArrayAccess
      */
     public function isDirty($key)
     {
-        return isset($this->dirty_fields[$key]);
+        return array_key_exists($key, $this->dirty_fields);
     }
 
     /**
