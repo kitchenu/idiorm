@@ -81,4 +81,20 @@ class ResultSetTest extends PHPUnit_Framework_TestCase {
         }
     }
 
+    public function testOffset() {
+        $ResultSet = new ResultSet();
+        $ResultSet->offsetSet('item', new stdClass);
+        $this->assertTrue($ResultSet->offsetExists('item'));
+        $this->assertInstanceOf('stdClass', $ResultSet->offsetGet('item'));
+
+        $ResultSet->offsetUnset('item');
+        $this->assertFalse($ResultSet->offsetExists('item'));
+    }
+
+    public function testSelialize() {
+        $result_set = ['item' => new stdClass];
+        $ResultSet = new ResultSet($result_set);
+        $serial = $ResultSet->serialize();
+        $this->assertEquals($result_set, $ResultSet->unserialize($serial));
+    }
 }
