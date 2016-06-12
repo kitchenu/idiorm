@@ -23,6 +23,7 @@ class ResultSet implements Countable, IteratorAggregate, ArrayAccess, Serializab
     /**
      * Optionally set the contents of the result set by passing in array
      * @param array $results
+     * @return void
      */
     public function __construct(array $results = [])
     {
@@ -32,6 +33,7 @@ class ResultSet implements Countable, IteratorAggregate, ArrayAccess, Serializab
     /**
      * Set the contents of the result set by passing in array
      * @param array $results
+     * @return void
      */
     public function setResults(array $results)
     {
@@ -68,7 +70,7 @@ class ResultSet implements Countable, IteratorAggregate, ArrayAccess, Serializab
     /**
      * Get an iterator for this object. In this case it supports foreaching
      * over the result set.
-     * @return \ArrayIterator
+     * @return ArrayIterator
      */
     public function getIterator()
     {
@@ -99,6 +101,7 @@ class ResultSet implements Countable, IteratorAggregate, ArrayAccess, Serializab
      * ArrayAccess
      * @param int|string $offset
      * @param mixed $value
+     * @return void
      */
     public function offsetSet($offset, $value)
     {
@@ -108,6 +111,7 @@ class ResultSet implements Countable, IteratorAggregate, ArrayAccess, Serializab
     /**
      * ArrayAccess
      * @param int|string $offset
+     * @return void
      */
     public function offsetUnset($offset)
     {

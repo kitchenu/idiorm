@@ -66,7 +66,7 @@ class CacheTest extends PHPUnit_Framework_TestCase {
             $phpunit->assertEquals(true, is_string($connection_name));
             $phpunit->assertEquals('widget', $table_name);
 
-            if(isset($my_cache) and isset($my_cache[$cache_key])){
+            if(isset($my_cache) && isset($my_cache[$cache_key])){
                $phpunit->assertEquals(true, is_array($my_cache[$cache_key]));
                return $my_cache[$cache_key];
             } else {

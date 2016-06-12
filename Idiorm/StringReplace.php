@@ -19,7 +19,7 @@ class StringReplace
     /**
      * Get an easy to use instance of the class
      * @param string $subject
-     * @return \static
+     * @return static
      */
     public static function value($subject)
     {

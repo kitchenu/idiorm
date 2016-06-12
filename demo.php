@@ -14,7 +14,7 @@ ORM::configure('sqlite:./demo.sqlite');
 // This grabs the raw database connection from the ORM
 // class and creates the table if it doesn't already exist.
 // Wouldn't normally be needed if the table is already there.
-$db = ORM::get_db();
+$db = ORM::getDb();
 $db->exec("
         CREATE TABLE IF NOT EXISTS contact (
             id INTEGER PRIMARY KEY, 
@@ -43,7 +43,7 @@ if (!empty($_POST)) {
 }
 
 // Get a list of all contacts from the database
-$count = ORM::forTable('contact')->count();
+$count = ORM::forTable('contact')->findOne();
 $contact_list = ORM::forTable('contact')->findMany();
 ?>
 
