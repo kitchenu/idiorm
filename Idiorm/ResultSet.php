@@ -59,6 +59,17 @@ class ResultSet implements Countable, IteratorAggregate, ArrayAccess, Serializab
     }
 
     /**
+     * Get the current result set as an json
+     *
+     * @param int $options
+     * @return string
+     */
+    public function asJson($options = 0)
+    {
+        return json_encode($this->getResults(), $options);
+    }
+
+    /**
      * Get the number of records in the result set
      * @return int
      */

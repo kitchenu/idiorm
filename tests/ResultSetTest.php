@@ -44,6 +44,13 @@ class ResultSetTest extends PHPUnit_Framework_TestCase {
         $this->assertSame($ResultSet->asArray(), $result_set);
     }
 
+    public function testAsJson() {
+        $result_set = ['item' => new stdClass];
+        $ResultSet = new ResultSet();
+        $ResultSet->setResults($result_set);
+        $this->assertSame($ResultSet->asJson(), '{"item":{}}');
+    }
+
     public function testCount() {
         $result_set = ['item' => new stdClass];
         $ResultSet = new ResultSet($result_set);

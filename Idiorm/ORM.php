@@ -2212,6 +2212,18 @@ class ORM implements ArrayAccess
     }
 
     /**
+     * Return the raw data wrapped by this ORM
+     * instance as an json.
+     *
+     * @param int $options
+     * @return string
+     */
+    public function asJson($options = 0)
+    {
+        return json_encode($this->asArray(), $options);
+    }
+
+    /**
      * Return the value of a property of this object (database row)
      * or null if not present.
      *
